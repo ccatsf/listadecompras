@@ -60,7 +60,7 @@ export default function App() {
     setIsLoading(true);
     setError(null);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
       const model = "gemini-3-flash-preview";
       
       const prompt = `Extract product information from this URL: ${url}. 
@@ -91,27 +91,24 @@ export default function App() {
      const handleAddLink = async () => {
   try {
     // Chamando sua própria API em vez de ir direto na Kabum
-    const res = await fetch(`/api/extract?url=${linkDigitado}`);
-    const data = await res.json();
-    
-    if (data.title) {
-      setNomeProduto(data.title);
-      // ... lógica para salvar
-    }
-  } catch (err) {
-    setErro("Não foi possível extrair. Tente digitar manualmente.");
-  }
+    // Substitua o trecho após o "const data = JSON.parse(response.text);" por este:
+
+const data = JSON.parse(response.text()); // Adicione os parênteses em text()
+
+const newProduct: Product = {
+  id: Math.random().toString(36).substr(2, 9),
+  url: url,
+  title: data.title || "Produto sem título",
+  price: data.price || 0,
+  imageUrl: data.imageUrl || "",
+  notes: '',
+  tags: [],
+  createdAt: Date.now()
 };
-      setProducts(prev => [newProduct, ...prev]);
-      setNewUrl('');
-      setIsAdding(false);
-    } catch (err) {
-      console.error(err);
-      setError("Não foi possível extrair os dados do link automaticamente. Tente outro link ou verifique sua conexão.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+
+setProducts(prev => [newProduct, ...prev]);
+setNewUrl('');
+setIsAdding(false);
 
   const removeProduct = (id: string) => {
     setProducts(prev => prev.filter(p => p.id !== id));
