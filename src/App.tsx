@@ -47,64 +47,41 @@ export default function App() {
     return products.reduce((acc, p) => acc + (Number(p.price) || 0), 0);
   }, [products]);
 
-  const extractProductData = async (url: string) => {
-    if (!url.startsWith('http')) {
-      setError("Por favor, insira uma URL válida.");
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
+const extractProductData = async (url: string) => {
+  setIsLoading(true);
+  setError(null);
+  
+  try {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     
-    try {
-      // 1. Verificação da Chave
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      
-      if (!apiKey || apiKey === "undefined") {
-        throw new Error("API Key não encontrada. Se você já configurou no Vercel, tente fazer um 'Redeploy' sem cache.");
-      }
+    // Esse log vai te ajudar a ver no console (F12) se a chave chegou
+    console.log("Status da Chave:", apiKey ? "OK!" : "Vazia/Undefined");
 
-      const genAI = new GoogleGenAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      
-      const prompt = `Extract product information from this URL: ${url}. 
-      Return ONLY a JSON object with: "title" (string), "price" (number), and "imageUrl" (string). 
-      If price is unknown, use 0. Respond only with the JSON block.`;
-
-      // 2. Chamada da IA
-      const result = await model.generateContent(prompt);
-      // Ajuste crucial aqui para evitar erro de .text()
-      const response = await result.response;
-      const text = response.text();
-      
-      // Limpa marcações de Markdown caso a IA as inclua
-      const cleanJson = text.replace(/```json|```/g, "").trim();
-      const data = JSON.parse(cleanJson);
-      
-      // 3. Criação do Produto
-      const newProduct: Product = {
-        id: Math.random().toString(36).substr(2, 9),
-        url: url,
-        title: data.title || "Produto sem título",
-        price: data.price || 0,
-        imageUrl: data.imageUrl || `https://picsum.photos/seed/${Math.random()}/400/400`,
-        notes: '',
-        tags: [],
-        createdAt: Date.now()
-      };
-
-      setProducts(prev => [newProduct, ...prev]);
-      setNewUrl('');
-      setIsAdding(false);
-    } catch (err: any) {
-      console.error("Erro completo:", err);
-      // Se a chave estiver expirada, a mensagem virá do Google
-      setError(err.message || "Erro ao extrair dados. Verifique sua chave no Vercel.");
-    } finally {
-      setIsLoading(false);
+    if (!apiKey) {
+      throw new Error("A chave VITE_GEMINI_API_KEY não chegou no site. Faça um Redeploy sem cache no Vercel.");
     }
-  };
 
+    const genAI = new GoogleGenAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const prompt = `Extraia dados deste produto: ${url}. Retorne APENAS um JSON: {"title": "nome", "price": 0, "imageUrl": "link"}`;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text(); // Forma correta de pegar o texto
+
+    const cleanJson = text.replace(/```json|```/g, "").trim();
+    const data = JSON.parse(cleanJson);
+
+    // ... restante do seu código para salvar o produto ...
+
+  } catch (err: any) {
+    console.error("Erro Real:", err);
+    setError(err.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
   const removeProduct = (id: string) => {
     setProducts(prev => prev.filter(p => p.id !== id));
   };
