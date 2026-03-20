@@ -61,14 +61,14 @@ export default function App() {
     setError(null);
     try {
       // ✅ USANDO A VARIÁVEL DE AMBIENTE DO VITE (COFRE DO VERCEL)
-      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
-      const model = "gemini-3-flash-preview";
+      const ai = new GoogleGenAI(import.meta.env.VITE_GEMINI_API_KEY);
+      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
       
       const prompt = `Extract product information from this URL: ${url}. 
       Return the product title, price (as a number), and a representative image URL.
       If the price is not clear, estimate it or put 0.
       Respond ONLY with JSON.`;
-
+      
       const response = await ai.models.generateContent({
         model,
         contents: prompt,
@@ -86,7 +86,9 @@ export default function App() {
         }
       });
       
-       const data = JSON.parse(response.response.text()); // Acrescentamos um ".response"     
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const data = JSON.parse(response.text());
       
       // ✅ CRIANDO O OBJETO DO PRODUTO PARA ADICIONAR NA LISTA
       const newProduct: Product = {
