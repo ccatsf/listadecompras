@@ -1,0 +1,5 @@
+{
+  "name": "Lista de Compras Online",
+  "description": "Uma lista de compras inteligente que extrai automaticamente detalhes de links de produtos, calcula o total e permite adicionar notas e etiquetas.",
+  "requestFramePermissions": []
+}
