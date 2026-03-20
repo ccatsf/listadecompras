@@ -56,23 +56,26 @@ export default function App() {
     setIsLoading(true);
     setError(null);
     try {
-      // 1. Configuração da IA
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-if (!apiKey) {
-  throw new Error("Chave API não encontrada. Verifique as configurações do Vercel.");
-}
-const genAI = new GoogleGenAI(apiKey);      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      // 1. Verificação da Chave no Vercel/Vite
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      
+      if (!apiKey || apiKey === "undefined") {
+        throw new Error("API Key não configurada. Verifique as Environment Variables no Vercel.");
+      }
+
+      const genAI = new GoogleGenAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       
       const prompt = `Extract product information from this URL: ${url}. 
       Return ONLY a JSON object with: "title" (string), "price" (number), and "imageUrl" (string). 
-      If price is unknown, use 0.`;
+      If price is unknown, use 0. Respond only with the JSON block.`;
 
       // 2. Chamada da IA
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
       
-      // Limpa possíveis marcações de Markdown que a IA as vezes coloca
+      // Limpa marcações de Markdown (```json ... ```) caso a IA as inclua
       const cleanJson = text.replace(/```json|```/g, "").trim();
       const data = JSON.parse(cleanJson);
       
@@ -91,9 +94,9 @@ const genAI = new GoogleGenAI(apiKey);      const model = genAI.getGenerativeMod
       setProducts(prev => [newProduct, ...prev]);
       setNewUrl('');
       setIsAdding(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Erro ao extrair dados. Verifique sua chave no Vercel ou preencha manualmente.");
+      setError(err.message || "Erro ao extrair dados. Tente outro link ou verifique sua chave.");
     } finally {
       setIsLoading(false);
     }
@@ -181,7 +184,7 @@ const genAI = new GoogleGenAI(apiKey);      const model = genAI.getGenerativeMod
                 <input 
                   autoFocus
                   type="url"
-                  placeholder="Cole o link da Kabum, Amazon..."
+                  placeholder="Link da Kabum, Amazon, etc..."
                   value={newUrl}
                   onChange={(e) => setNewUrl(e.target.value)}
                   className="w-full bg-[#F2F2F7] border-none rounded-xl px-4 py-4 text-base focus:ring-2 focus:ring-[#007AFF]"
@@ -218,7 +221,7 @@ function ProductCard({ product, onRemove }: { product: Product, onRemove: () => 
             src={product.imageUrl} 
             alt={product.title}
             className="w-full h-full object-cover"
-            onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/200'; }}
+            onError={(e) => { (e.target as HTMLImageElement).src = '[https://picsum.photos/200](https://picsum.photos/200)'; }}
           />
         </div>
         <div className="flex-1">
