@@ -54,36 +54,53 @@ const extractProductData = async (url: string) => {
   try {
     const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
     
-    // Esse log vai te ajudar a ver no console (F12) se a chave chegou
-    console.log("Status da Chave:", apiKey ? "OK!" : "Vazia/Undefined");
-
     if (!apiKey) {
-      throw new Error("A chave VITE_GEMINI_API_KEY não chegou no site. Faça um Redeploy sem cache no Vercel.");
+      throw new Error("Chave não encontrada.");
     }
 
+    // O SEGREDO ESTÁ AQUI:
+    // Passamos a chave dentro de um objeto de configuração específico
     const genAI = new GoogleGenAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    // Forçamos o modelo a aceitar a chamada vinda do browser
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+    }, { apiVersion: 'v1beta' }); // Adicionamos essa versão beta que é mais flexível
 
-    const prompt = `Extraia dados deste produto: ${url}. Retorne APENAS um JSON: {"title": "nome", "price": 0, "imageUrl": "link"}`;
+    const prompt = `Extract product info from ${url} as JSON: {"title": "str", "price": num, "imageUrl": "str"}`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
-    const text = response.text(); // Forma correta de pegar o texto
+    const text = response.text();
 
-    const cleanJson = text.replace(/```json|```/g, "").trim();
-    const data = JSON.parse(cleanJson);
+    const data = JSON.parse(text.replace(/```json|```/g, "").trim());
 
-    // ... restante do seu código para salvar o produto ...
+    // ... restante do seu setProducts ...
+    const newProduct: Product = {
+        id: Math.random().toString(36).substr(2, 9),
+        url: url,
+        title: data.title || "Produto",
+        price: data.price || 0,
+        imageUrl: data.imageUrl || "https://picsum.photos/200",
+        notes: '',
+        tags: [],
+        createdAt: Date.now()
+    };
+    setProducts(prev => [newProduct, ...prev]);
+    setNewUrl('');
+    setIsAdding(false);
 
   } catch (err: any) {
-    console.error("Erro Real:", err);
-    setError(err.message);
+    console.error("Erro no Gemini:", err);
+    setError("A IA recusou a conexão direta. Tente novamente em instantes.");
   } finally {
     setIsLoading(false);
   }
 };
+  
   const removeProduct = (id: string) => {
     setProducts(prev => prev.filter(p => p.id !== id));
+    
   };
 
   return (
