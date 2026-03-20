@@ -88,17 +88,20 @@ export default function App() {
 
       const data = JSON.parse(response.text);
       
-      const newProduct: Product = {
-        id: Math.random().toString(36).substring(7),
-        url,
-        title: data.title || "Produto sem título",
-        price: data.price || 0,
-        imageUrl: data.imageUrl || `https://picsum.photos/seed/${Math.random()}/400/400`,
-        notes: "",
-        tags: [],
-        createdAt: Date.now()
-      };
-
+     const handleAddLink = async () => {
+  try {
+    // Chamando sua própria API em vez de ir direto na Kabum
+    const res = await fetch(`/api/extract?url=${linkDigitado}`);
+    const data = await res.json();
+    
+    if (data.title) {
+      setNomeProduto(data.title);
+      // ... lógica para salvar
+    }
+  } catch (err) {
+    setErro("Não foi possível extrair. Tente digitar manualmente.");
+  }
+};
       setProducts(prev => [newProduct, ...prev]);
       setNewUrl('');
       setIsAdding(false);
