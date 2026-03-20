@@ -55,12 +55,13 @@ export default function App() {
 
     setIsLoading(true);
     setError(null);
+    
     try {
-      // 1. Verificação da Chave no Vercel/Vite
+      // 1. Verificação da Chave
       const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
       
       if (!apiKey || apiKey === "undefined") {
-        throw new Error("API Key não configurada. Verifique as Environment Variables no Vercel.");
+        throw new Error("API Key não encontrada. Se você já configurou no Vercel, tente fazer um 'Redeploy' sem cache.");
       }
 
       const genAI = new GoogleGenAI(apiKey);
@@ -72,10 +73,11 @@ export default function App() {
 
       // 2. Chamada da IA
       const result = await model.generateContent(prompt);
+      // Ajuste crucial aqui para evitar erro de .text()
       const response = await result.response;
       const text = response.text();
       
-      // Limpa marcações de Markdown (```json ... ```) caso a IA as inclua
+      // Limpa marcações de Markdown caso a IA as inclua
       const cleanJson = text.replace(/```json|```/g, "").trim();
       const data = JSON.parse(cleanJson);
       
@@ -95,8 +97,9 @@ export default function App() {
       setNewUrl('');
       setIsAdding(false);
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Erro ao extrair dados. Tente outro link ou verifique sua chave.");
+      console.error("Erro completo:", err);
+      // Se a chave estiver expirada, a mensagem virá do Google
+      setError(err.message || "Erro ao extrair dados. Verifique sua chave no Vercel.");
     } finally {
       setIsLoading(false);
     }
@@ -221,7 +224,7 @@ function ProductCard({ product, onRemove }: { product: Product, onRemove: () => 
             src={product.imageUrl} 
             alt={product.title}
             className="w-full h-full object-cover"
-            onError={(e) => { (e.target as HTMLImageElement).src = '[https://picsum.photos/200](https://picsum.photos/200)'; }}
+            onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/200'; }}
           />
         </div>
         <div className="flex-1">
