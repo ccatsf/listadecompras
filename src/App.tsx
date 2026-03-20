@@ -85,8 +85,8 @@ export default function App() {
           }
         }
       });
-
-      const data = JSON.parse(response.text());
+      
+       const data = JSON.parse(response.response.text()); // Acrescentamos um ".response"     
       
       // ✅ CRIANDO O OBJETO DO PRODUTO PARA ADICIONAR NA LISTA
       const newProduct: Product = {
