@@ -3,15 +3,12 @@ import {
   Plus, 
   Trash2, 
   ExternalLink, 
-  Tag as TagIcon, 
-  StickyNote, 
   Loader2,
   ShoppingBag,
-  ArrowRight,
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
 // Types
 interface Product {
@@ -42,7 +39,6 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Salva os dados sempre que a lista de produtos mudar
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
   }, [products]);
@@ -60,37 +56,24 @@ export default function App() {
     setIsLoading(true);
     setError(null);
     try {
-      // ✅ USANDO A VARIÁVEL DE AMBIENTE DO VITE (COFRE DO VERCEL)
-      const ai = new GoogleGenAI(import.meta.env.VITE_GEMINI_API_KEY);
-      const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+      // 1. Configuração da IA
+      const genAI = new GoogleGenAI(import.meta.env.VITE_GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       
       const prompt = `Extract product information from this URL: ${url}. 
-      Return the product title, price (as a number), and a representative image URL.
-      If the price is not clear, estimate it or put 0.
-      Respond ONLY with JSON.`;
-      
-      const response = await ai.models.generateContent({
-        model,
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              price: { type: Type.NUMBER },
-              imageUrl: { type: Type.STRING }
-            },
-            required: ["title", "price", "imageUrl"]
-          }
-        }
-      });
-      
+      Return ONLY a JSON object with: "title" (string), "price" (number), and "imageUrl" (string). 
+      If price is unknown, use 0.`;
+
+      // 2. Chamada da IA
       const result = await model.generateContent(prompt);
       const response = await result.response;
-      const data = JSON.parse(response.text());
+      const text = response.text();
       
-      // ✅ CRIANDO O OBJETO DO PRODUTO PARA ADICIONAR NA LISTA
+      // Limpa possíveis marcações de Markdown que a IA as vezes coloca
+      const cleanJson = text.replace(/```json|```/g, "").trim();
+      const data = JSON.parse(cleanJson);
+      
+      // 3. Criação do Produto
       const newProduct: Product = {
         id: Math.random().toString(36).substr(2, 9),
         url: url,
@@ -107,7 +90,7 @@ export default function App() {
       setIsAdding(false);
     } catch (err) {
       console.error(err);
-      setError("Não foi possível extrair os dados. Verifique sua Chave de API no Vercel ou tente outro link.");
+      setError("Erro ao extrair dados. Verifique sua chave no Vercel ou preencha manualmente.");
     } finally {
       setIsLoading(false);
     }
@@ -115,10 +98,6 @@ export default function App() {
 
   const removeProduct = (id: string) => {
     setProducts(prev => prev.filter(p => p.id !== id));
-  };
-
-  const updateProduct = (id: string, updates: Partial<Product>) => {
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
   };
 
   return (
@@ -165,7 +144,6 @@ export default function App() {
                   key={product.id} 
                   product={product} 
                   onRemove={() => removeProduct(product.id)}
-                  onUpdate={(updates) => updateProduct(product.id, updates)}
                 />
               ))
             )}
@@ -200,7 +178,7 @@ export default function App() {
                 <input 
                   autoFocus
                   type="url"
-                  placeholder="Cole o link aqui..."
+                  placeholder="Cole o link da Kabum, Amazon..."
                   value={newUrl}
                   onChange={(e) => setNewUrl(e.target.value)}
                   className="w-full bg-[#F2F2F7] border-none rounded-xl px-4 py-4 text-base focus:ring-2 focus:ring-[#007AFF]"
@@ -228,16 +206,9 @@ export default function App() {
   );
 }
 
-// Componente do Card de Produto
-function ProductCard({ product, onRemove, onUpdate }: { 
-  product: Product, 
-  onRemove: () => void,
-  onUpdate: (updates: Partial<Product>) => void
-}) {
-  const [isEditing, setIsEditing] = useState(false);
-
+function ProductCard({ product, onRemove }: { product: Product, onRemove: () => void }) {
   return (
-    <motion.div layout className="bg-white rounded-2xl overflow-hidden shadow-sm border border-[#E5E5EA]">
+    <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-[#E5E5EA]">
       <div className="p-4 flex gap-4">
         <div className="w-24 h-24 rounded-xl overflow-hidden bg-[#F2F2F7] flex-shrink-0">
           <img 
@@ -255,7 +226,7 @@ function ProductCard({ product, onRemove, onUpdate }: {
           <p className="text-lg font-bold text-[#007AFF] mt-1">
             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
           </p>
-          <a href={product.url} target="_blank" className="text-xs text-[#8E8E93] flex items-center gap-1 mt-2">
+          <a href={product.url} target="_blank" rel="noreferrer" className="text-xs text-[#8E8E93] flex items-center gap-1 mt-2">
             Ver anúncio <ExternalLink size={12} />
           </a>
         </div>
