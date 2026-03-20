@@ -57,8 +57,11 @@ export default function App() {
     setError(null);
     try {
       // 1. Configuração da IA
-      const genAI = new GoogleGenAI(import.meta.env.VITE_GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+if (!apiKey) {
+  throw new Error("Chave API não encontrada. Verifique as configurações do Vercel.");
+}
+const genAI = new GoogleGenAI(apiKey);      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       
       const prompt = `Extract product information from this URL: ${url}. 
       Return ONLY a JSON object with: "title" (string), "price" (number), and "imageUrl" (string). 
