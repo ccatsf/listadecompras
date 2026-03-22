@@ -45,7 +45,7 @@ export default function App() {
       if (!apiKey) throw new Error("Chave não encontrada no ambiente.");
 
       // Inicialização simplificada para evitar bloqueio de segurança do navegador
-      const genAI = new GoogleGenAI(apiKey);
+      const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
       const prompt = `Extract product information from this URL: ${url}. 
