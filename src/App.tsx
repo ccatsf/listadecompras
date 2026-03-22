@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";]
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Trash2, ExternalLink, Loader2, ShoppingBag, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
