@@ -1,8 +1,6 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, ExternalLink, Loader2, ShoppingBag, X } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 
 interface Product {
   id: string;
@@ -16,6 +14,31 @@ interface Product {
 }
 
 const STORAGE_KEY = 'shopping_list_data';
+
+// 🔥 Função simples (sem IA)
+function extrairNomeProduto(url: string) {
+  try {
+    const partes = url.split("/");
+    const ultimo = partes[partes.length - 1];
+
+    const nome = ultimo
+      .replace(/-/g, " ")
+      .replace(/\?.*$/, "")
+      .trim();
+
+    return nome || "Produto";
+  } catch {
+    return "Produto";
+  }
+}
+
+// 🔥 Opcional: deixa bonitinho
+function formatarNome(nome: string) {
+  return nome
+    .split(" ")
+    .map(p => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(" ");
+}
 
 export default function App() {
   const [products, setProducts] = useState<Product[]>(() => {
@@ -35,37 +58,22 @@ export default function App() {
     return products.reduce((acc, p) => acc + (Number(p.price) || 0), 0);
   }, [products]);
 
+  // 🔥 NOVA FUNÇÃO SEM IA
   const extractProductData = async (url: string) => {
+    if (!url) return;
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      
-      if (!apiKey) throw new Error("Chave não encontrada no ambiente.");
-
-      // Inicialização simplificada para evitar bloqueio de segurança do navegador
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-      const prompt = `Extract product information from this URL: ${url}. 
-      Return ONLY a JSON object: {"title": "string", "price": number, "imageUrl": "string"}. 
-      Do not include markdown formatting.`;
-
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-      
-      // Limpeza robusta para garantir que o JSON.parse não falhe
-      const cleanJson = text.replace(/```json|```/g, "").trim();
-      const data = JSON.parse(cleanJson);
+      const nome = formatarNome(extrairNomeProduto(url));
 
       const newProduct: Product = {
         id: Math.random().toString(36).substr(2, 9),
         url,
-        title: data.title || "Produto",
-        price: data.price || 0,
-        imageUrl: data.imageUrl || "https://picsum.photos/200",
+        title: nome,
+        price: 0,
+        imageUrl: "https://picsum.photos/200",
         notes: '',
         tags: [],
         createdAt: Date.now()
@@ -74,10 +82,8 @@ export default function App() {
       setProducts(prev => [newProduct, ...prev]);
       setNewUrl('');
       setIsAdding(false);
-    } catch (err: any) {
-      console.error("Erro detalhado:", err);
-      // Mensagem amigável que ajuda a identificar se é a chave ou a conexão
-      setError("Erro na conexão com a IA. Tente fazer um Redeploy sem cache no Vercel.");
+    } catch (err) {
+      setError("Erro ao processar o link.");
     } finally {
       setIsLoading(false);
     }
@@ -123,8 +129,12 @@ export default function App() {
                     <h3 className="font-bold line-clamp-1">{product.title}</h3>
                     <button onClick={() => removeProduct(product.id)} className="text-red-500"><Trash2 size={18} /></button>
                   </div>
-                  <p className="text-[#007AFF] font-bold">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}</p>
-                  <a href={product.url} target="_blank" className="text-xs text-gray-400 flex items-center gap-1 mt-1">Ver link <ExternalLink size={10} /></a>
+                  <p className="text-[#007AFF] font-bold">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
+                  </p>
+                  <a href={product.url} target="_blank" className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                    Ver link <ExternalLink size={10} />
+                  </a>
                 </div>
               </motion.div>
             ))}
