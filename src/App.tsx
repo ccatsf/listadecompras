@@ -46,7 +46,7 @@ export default function App() {
 
       // Inicialização simplificada para evitar bloqueio de segurança do navegador
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
       const prompt = `Extract product information from this URL: ${url}. 
       Return ONLY a JSON object: {"title": "string", "price": number, "imageUrl": "string"}. 
