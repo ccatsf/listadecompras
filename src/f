@@ -15,24 +15,26 @@ interface Product {
 
 const STORAGE_KEY = 'shopping_list_data';
 
-// 🔥 Função simples (sem IA)
+// 🔥 MELHORADO: remove números e limpa melhor o nome
 function extrairNomeProduto(url: string) {
   try {
     const partes = url.split("/");
-    const ultimo = partes[partes.length - 1];
+    let ultimo = partes[partes.length - 1];
+
+    ultimo = ultimo.split("?")[0]; // remove parâmetros
+    ultimo = ultimo.replace(/\d+/g, ""); // remove números
 
     const nome = ultimo
       .replace(/-/g, " ")
-      .replace(/\?.*$/, "")
       .trim();
 
-    return nome || "Produto";
+    return nome.length > 3 ? nome : "Produto";
   } catch {
     return "Produto";
   }
 }
 
-// 🔥 Opcional: deixa bonitinho
+// 🔥 Formata nome bonitinho
 function formatarNome(nome: string) {
   return nome
     .split(" ")
@@ -58,7 +60,6 @@ export default function App() {
     return products.reduce((acc, p) => acc + (Number(p.price) || 0), 0);
   }, [products]);
 
-  // 🔥 NOVA FUNÇÃO SEM IA
   const extractProductData = async (url: string) => {
     if (!url) return;
 
@@ -66,14 +67,18 @@ export default function App() {
     setError(null);
 
     try {
-      const nome = formatarNome(extrairNomeProduto(url));
+      const nomeBruto = extrairNomeProduto(url);
+      const nome = formatarNome(nomeBruto);
+
+      const imageUrl = `https://source.unsplash.com/200x200/?${encodeURIComponent(nomeBruto + ",product")}`;
 
       const newProduct: Product = {
         id: Math.random().toString(36).substr(2, 9),
         url,
         title: nome,
         price: 0,
-        imageUrl: `https://source.unsplash.com/200x200/?${encodeURIComponent(nome)}`,        notes: '',
+        imageUrl: imageUrl,
+        notes: '',
         tags: [],
         createdAt: Date.now()
       };
@@ -126,7 +131,9 @@ export default function App() {
                 <div className="flex-1">
                   <div className="flex justify-between">
                     <h3 className="font-bold line-clamp-1">{product.title}</h3>
-                    <button onClick={() => removeProduct(product.id)} className="text-red-500"><Trash2 size={18} /></button>
+                    <button onClick={() => removeProduct(product.id)} className="text-red-500">
+                      <Trash2 size={18} />
+                    </button>
                   </div>
                   <p className="text-[#007AFF] font-bold">
                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
