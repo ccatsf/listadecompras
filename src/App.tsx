@@ -73,8 +73,7 @@ export default function App() {
         url,
         title: nome,
         price: 0,
-        imageUrl: "https://picsum.photos/200",
-        notes: '',
+        imageUrl: `https://source.unsplash.com/200x200/?${encodeURIComponent(nome)}`,        notes: '',
         tags: [],
         createdAt: Date.now()
       };
